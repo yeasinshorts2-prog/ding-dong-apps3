@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ding Dong Apps - Android App Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b1120;
+            color: #f8fafc;
+        }
+        .glass-nav {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .app-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .app-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(16, 185, 129, 0.45);
+            box-shadow: 0 12px 28px -8px rgba(16, 185, 129, 0.18);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200">
+
+    <!-- ==================== HEADER / NAVBAR ==================== -->
+    <header class="glass-nav sticky top-0 z-40 border-b border-slate-800/80">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <!-- Brand -->
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="resetFilters()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-xl shadow-lg shadow-emerald-500/20">
+                    🔔
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white leading-none">
+                        Ding Dong <span class="text-emerald-400">Apps</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 font-medium mt-0.5">Official Android APK Store</p>
+                </div>
+            </div>
+
+            <!-- Right Actions -->
+            <div class="flex items-center gap-2">
+                <button onclick="openModal('installGuideModal')" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 transition">
+                    <span>📱</span> Install Guide
+                </button>
+                <button onclick="openAdminFlow()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                    <span>⬆️</span> Upload App
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== HERO SECTION ==================== -->
+    <section class="relative overflow-hidden border-b border-slate-800/70 bg-gradient-to-b from-slate-900/90 to-[#0b1120]">
+        <div class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="max-w-xl">
+                    <!-- Cloud Status Badge -->
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700/70 text-xs font-medium text-slate-300 mb-4">
+                        <span id="cloudStatusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span id="cloudStatusText">Connecting to Cloud...</span>
+                    </div>
+
+                    <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                        Download Exclusive <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Android Apps</span> Directly
+                    </h2>
+                    <p class="text-slate-400 text-sm sm:text-base mt-3 leading-relaxed">
+                        Safe, fast, and directly built by our developer. Browse all apps below and tap Download APK to install on your Android device.
+                    </p>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-2 gap-3 sm:w-auto">
+                    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center min-w-[125px]">
+                        <div id="statTotalApps" class="text-2xl sm:text-3xl font-extrabold text-emerald-400">0</div>
+                        <div class="text-xs text-slate-400 font-medium mt-1">Total Apps</div>
+                    </div>
+                    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center min-w-[125px]">
+                        <div id="statTotalDownloads" class="text-2xl sm:text-3xl font-extrabold text-cyan-400">0</div>
+                        <div class="text-xs text-slate-400 font-medium mt-1">Downloads</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search & Sort Controls -->
+            <div class="mt-7 flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+                    <input
+                        id="searchInput"
+                        type="text"
+                        placeholder="Search apps by name, category, or feature..."
+                        oninput="renderApps()"
+                        class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700/80 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition"
+                    >
+                </div>
+                <select
+                    id="sortSelect"
+                    onchange="renderApps()"
+                    class="px-4 py-3 rounded-xl bg-slate-900/90 border border-slate-700/80 text-sm text-slate-200 focus:outline-none focus:border-emerald-400 transition sm:w-48"
+                >
+                    <option value="newest">Sort: Newest First</option>
+                    <option value="downloads">Sort: Most Downloaded</option>
+                    <option value="name">Sort: Name (A-Z)</option>
+                </select>
+            </div>
+
+            <!-- Category Pills -->
+            <div id="categoryPills" class="mt-4 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+        </div>
+    </section>
+
+    <!-- ==================== APPS GRID ==================== -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>📦</span> Available Apps
+            </h3>
+            <span id="showingCount" class="text-xs text-slate-400 font-medium">Loading...</span>
+        </div>
+
+        <div id="appsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- App cards injected here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-16 px-4 bg-slate-900/50 border border-slate-800 rounded-2xl">
+            <div class="text-4xl mb-3">📭</div>
+            <h4 class="text-lg font-bold text-white">No apps found</h4>
+            <p class="text-sm text-slate-400 mt-1">Try a different search keyword or category.</p>
+            <button onclick="resetFilters()" class="mt-4 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-400 border border-slate-700 transition">
+                Show All Apps
+            </button>
+        </div>
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="border-t border-slate-800/80 bg-slate-950/60 py-6 mt-auto">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <p>© <span id="currentYear"></span> <strong class="text-slate-200">Ding Dong Apps</strong>. All rights reserved.</p>
+            <div class="flex items-center gap-4">
+                <button onclick="openModal('installGuideModal')" class="hover:text-emerald-400 transition">How to Install APK</button>
+                <button onclick="openAdminFlow()" class="hover:text-emerald-400 transition">Developer Admin</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== MODAL 1: APP DETAILS ==================== -->
+    <div id="detailsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
+            <div class="p-5 sm:p-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-center gap-3.5">
+                        <div id="detailIcon" class="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-3xl shrink-0 overflow-hidden"></div>
+                        <div>
+                            <span id="detailCategory" class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 mb-1"></span>
+                            <h3 id="detailName" class="text-xl font-extrabold text-white leading-tight"></h3>
+                            <p id="detailMeta" class="text-xs text-slate-400 mt-0.5"></p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('detailsModal')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">✕</button>
+                </div>
+
+                <div class="mt-5 grid grid-cols-3 gap-2.5 text-center">
+                    <div class="bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/50">
+                        <div class="text-[11px] text-slate-400">Version</div>
+                        <div id="detailVersion" class="text-sm font-bold text-white mt-0.5"></div>
+                    </div>
+                    <div class="bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/50">
+                        <div class="text-[11px] text-slate-400">Size</div>
+                        <div id="detailSize" class="text-sm font-bold text-white mt-0.5"></div>
+                    </div>
+                    <div class="bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/50">
+                        <div class="text-[11px] text-slate-400">Downloads</div>
+                        <div id="detailDownloads" class="text-sm font-bold text-emerald-400 mt-0.5"></div>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">About This App</h4>
+                    <p id="detailDescription" class="text-sm text-slate-300 leading-relaxed whitespace-pre-line bg-slate-950/60 p-3.5 rounded-xl border border-slate-800"></p>
+                </div>
+
+                <div class="mt-6 flex items-center gap-3">
+                    <button id="detailDownloadBtn" class="flex-1 py-3 px-4 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                        <span>⬇️</span> Download APK
+                    </button>
+                    <button onclick="closeModal('detailsModal'); openModal('installGuideModal');" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition">
+                        Install Help
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 2: ADMIN LOGIN ==================== -->
+    <div id="pinModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-extrabold text-white flex items-center gap-2">
+                    <span>🔐</span> Developer Login
+                </h3>
+                <button onclick="closeModal('pinModal')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center">✕</button>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Enter your admin password to upload or manage apps on Ding Dong Apps.</p>
+
+            <form onsubmit="verifyAdminPin(event)">
+                <input
+                    id="pinInput"
+                    type="password"
+                    maxlength="40"
+                    placeholder="Enter Admin Password"
+                    autocomplete="current-password"
+                    class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition"
+                    required
+                >
+                <p id="pinError" class="hidden text-xs text-rose-400 font-medium mt-2">Incorrect password. Please try again.</p>
+                <button type="submit" class="mt-4 w-full py-3 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-sm transition active:scale-95">
+                    Unlock Admin Panel
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 3: ADMIN PANEL ==================== -->
+    <div id="adminModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Admin Header -->
+            <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+                <div>
+                    <h3 class="text-lg font-extrabold text-white flex items-center gap-2">
+                        <span>🛠️</span> Ding Dong Admin Panel
+                    </h3>
+                    <p class="text-xs text-slate-400">Publish new Android APKs or manage existing apps</p>
+                </div>
+                <button onclick="closeModal('adminModal')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center">✕</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-800 px-5 pt-3 gap-2 bg-slate-950/30">
+                <button id="tabPublishBtn" onclick="switchAdminTab('publish')" class="px-4 py-2 text-xs sm:text-sm font-bold rounded-t-xl bg-slate-800 text-emerald-400 border-t border-x border-slate-700">
+                    ➕ Upload New App
+                </button>
+                <button id="tabManageBtn" onclick="switchAdminTab('manage')" class="px-4 py-2 text-xs sm:text-sm font-bold rounded-t-xl text-slate-400 hover:text-white">
+                    📋 Manage Apps
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-5 overflow-y-auto flex-1">
+                <!-- Publish Form -->
+                <form id="publishTab" onsubmit="handlePublishApp(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">App Name *</label>
+                            <input id="appNameInput" type="text" required placeholder="e.g. Ding Dong Booster" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Category *</label>
+                            <select id="appCategoryInput" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400">
+                                <option value="Tools">Tools</option>
+                                <option value="Games">Games</option>
+                                <option value="Social">Social</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Education">Education</option>
+                                <option value="Productivity">Productivity</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Version *</label>
+                            <input id="appVersionInput" type="text" required placeholder="e.g. 1.0.0" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">File Size *</label>
+                            <input id="appSizeInput" type="text" required placeholder="e.g. 15 MB" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">APK Download Link (Google Drive / MediaFire / Direct URL) *</label>
+                        <input id="appDownloadUrlInput" type="url" required placeholder="https://drive.google.com/file/d/..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400">
+                        <p class="text-[11px] text-slate-400 mt-1">Upload your .apk file to Google Drive (Anyone with link) or MediaFire, then paste the link here.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Choose App Icon</label>
+                        <div id="emojiPicker" class="flex flex-wrap gap-2 mb-2"></div>
+                        <input id="appIconUrlInput" type="url" placeholder="Or paste custom icon image URL (optional)" class="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-400">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">App Description *</label>
+                        <textarea id="appDescInput" rows="3" required placeholder="Describe what your Android app does..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400"></textarea>
+                    </div>
+
+                    <button id="publishBtn" type="submit" class="w-full py-3 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition active:scale-95">
+                        🚀 Publish App Now
+                    </button>
+                </form>
+
+                <!-- Manage Apps List -->
+                <div id="manageTab" class="hidden space-y-3">
+                    <div id="manageAppsList" class="space-y-2.5"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 4: INSTALL GUIDE ==================== -->
+    <div id="installGuideModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-extrabold text-white">📱 How to Install APK</h3>
+                <button onclick="closeModal('installGuideModal')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center">✕</button>
+            </div>
+            <ol class="space-y-3 text-sm text-slate-300 list-decimal list-inside">
+                <li>Tap the <strong class="text-emerald-400">Download APK</strong> button on any app.</li>
+                <li>Once downloaded, open the <strong>.apk</strong> file from your notifications or File Manager.</li>
+                <li>If Android asks for permission, tap <strong>Settings</strong> and turn on <strong>Allow from this source</strong>.</li>
+                <li>Tap <strong>Install</strong> and enjoy your app!</li>
+            </ol>
+            <button onclick="closeModal('installGuideModal')" class="mt-5 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition">
+                Got it!
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 5: DELETE CONFIRM ==================== -->
+    <div id="deleteConfirmModal" class="hidden fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center">
+            <div class="text-3xl mb-2">🗑️</div>
+            <h4 class="text-lg font-bold text-white">Delete this App?</h4>
+            <p id="deleteAppNameText" class="text-xs text-slate-400 mt-1 mb-5"></p>
+            <div class="flex gap-3">
+                <button onclick="closeModal('deleteConfirmModal')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm">Cancel</button>
+                <button onclick="confirmDeleteApp()" class="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-sm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST NOTIFICATION ==================== -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 z-[70] px-4 py-3 rounded-xl text-sm font-semibold shadow-xl border transition-all"></div>
+
+    <!-- ==================== APPLICATION LOGIC ==================== -->
+    <script>
+        const ADMIN_PIN = "YEA123sin@#";
+        let isAdminUnlocked = false;
+        let selectedCategory = "All";
+        let selectedEmoji = "📱";
+        let pendingDeleteId = null;
+
+        const CATEGORIES = ["All", "Tools", "Games", "Social", "Entertainment", "Education", "Productivity"];
+        const EMOJI_OPTIONS = ["📱", "🎮", "⚡", "🎵", "📚", "🛠️", "💬", "🎬", "📷", "🚀", "🔔", "🧠"];
+
+        // Starter Apps shown initially if cloud database is empty or offline
+        const STARTER_APPS = [
+            {
+                name: "Ding Dong Cleaner Pro",
+                category: "Tools",
+                version: "1.2.0",
+                size: "8.4 MB",
+                downloads: 124,
+                icon: "⚡",
+                iconUrl: "",
+                downloadUrl: "https://example.com/ding-dong-cleaner.apk",
+                description: "Fast and lightweight Android utility to organize storage and boost device speed.",
+                createdAt: Date.now() - 100000
+            },
+            {
+                name: "Ding Dong Music Player",
+                category: "Entertainment",
+                version: "2.0.1",
+                size: "12.5 MB",
+                downloads: 89,
+                icon: "🎵",
+                iconUrl: "",
+                downloadUrl: "https://example.com/ding-dong-music.apk",
+                description: "Clean offline MP3 player with bass boost, dark theme, and instant folder playback.",
+                createdAt: Date.now() - 200000
+            }
+        ];
+
+        let apps = [];
+
+        // Cloud Database State
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let isCloudMode = false;
+        let initialSeedChecked = false;
+        let fsApi = null;
+
+        // Connected Firebase Configuration for Ding Dong Apps
+        const EXTERNAL_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAvVuPdcpQJrPGGOL47HLVYNn_28YWcuqQ",
+            authDomain: "ding-dong-apps.firebaseapp.com",
+            projectId: "ding-dong-apps",
+            storageBucket: "ding-dong-apps.firebasestorage.app",
+            messagingSenderId: "372104821007",
+            appId: "1:372104821007:web:86c8b1cc63ef88663e667a"
+        };
+
+        const appId = typeof __app_id !== "undefined" ? __app_id : "ding-dong-apps";
+
+        function setCloudStatus(text, dotColorClass) {
+            const textEl = document.getElementById("cloudStatusText");
+            const dotEl = document.getElementById("cloudStatusDot");
+            if (textEl) textEl.textContent = text;
+            if (dotEl) dotEl.className = "w-2 h-2 rounded-full " + dotColorClass;
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById("toast");
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.remove("hidden", "bg-emerald-950", "text-emerald-300", "border-emerald-500/40", "bg-rose-950", "text-rose-300", "border-rose-500/40", "bg-slate-800", "text-slate-200", "border-slate-600");
+
+            if (type === "error") {
+                toast.classList.add("bg-rose-950", "text-rose-300", "border-rose-500/40");
+            } else if (type === "info") {
+                toast.classList.add("bg-slate-800", "text-slate-200", "border-slate-600");
+            } else {
+                toast.classList.add("bg-emerald-950", "text-emerald-300", "border-emerald-500/40");
+            }
+
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(function () {
+                toast.classList.add("hidden");
+            }, 3500);
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove("hidden");
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add("hidden");
+        }
+
+        function openAdminFlow() {
+            if (isAdminUnlocked) {
+                renderManageAppsList();
+                openModal("adminModal");
+            } else {
+                document.getElementById("pinInput").value = "";
+                document.getElementById("pinError").classList.add("hidden");
+                openModal("pinModal");
+                setTimeout(function () {
+                    document.getElementById("pinInput").focus();
+                }, 100);
+            }
+        }
+
+        function verifyAdminPin(e) {
+            e.preventDefault();
+            const entered = document.getElementById("pinInput").value.trim();
+            if (entered === ADMIN_PIN) {
+                isAdminUnlocked = true;
+                closeModal("pinModal");
+                renderManageAppsList();
+                openModal("adminModal");
+                showToast("Welcome back, Developer!", "success");
+            } else {
+                document.getElementById("pinError").classList.remove("hidden");
+            }
+        }
+
+        function switchAdminTab(tab) {
+            const pubTab = document.getElementById("publishTab");
+            const manTab = document.getElementById("manageTab");
+            const pubBtn = document.getElementById("tabPublishBtn");
+            const manBtn = document.getElementById("tabManageBtn");
+
+            if (tab === "publish") {
+                pubTab.classList.remove("hidden");
+                manTab.classList.add("hidden");
+                pubBtn.className = "px-4 py-2 text-xs sm:text-sm font-bold rounded-t-xl bg-slate-800 text-emerald-400 border-t border-x border-slate-700";
+                manBtn.className = "px-4 py-2 text-xs sm:text-sm font-bold rounded-t-xl text-slate-400 hover:text-white";
+            } else {
+                pubTab.classList.add("hidden");
+                manTab.classList.remove("hidden");
+                manBtn.className = "px-4 py-2 text-xs sm:text-sm font-bold rounded-t-xl bg-slate-800 text-emerald-400 border-t border-x border-slate-700";
+                pubBtn.className = "px-4 py-2 text-xs sm:text-sm font-bold rounded-t-xl text-slate-400 hover:text-white";
+                renderManageAppsList();
+            }
+        }
+
+        function renderCategoryPills() {
+            const container = document.getElementById("categoryPills");
+            if (!container) return;
+            container.innerHTML = CATEGORIES.map(function (cat) {
+                const active = cat === selectedCategory;
+                return `<button onclick="selectCategory('${cat}')" class="px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition ${
+                    active
+                        ? "bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20"
+                        : "bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60"
+                }">${cat}</button>`;
+            }).join("");
+        }
+
+        function selectCategory(cat) {
+            selectedCategory = cat;
+            renderCategoryPills();
+            renderApps();
+        }
+
+        function resetFilters() {
+            selectedCategory = "All";
+            const search = document.getElementById("searchInput");
+            if (search) search.value = "";
+            renderCategoryPills();
+            renderApps();
+        }
+
+        function renderEmojiPicker() {
+            const container = document.getElementById("emojiPicker");
+            if (!container) return;
+            container.innerHTML = EMOJI_OPTIONS.map(function (emoji) {
+                const active = emoji === selectedEmoji;
+                return `<button type="button" onclick="pickEmoji('${emoji}')" class="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition ${
+                    active
+                        ? "bg-emerald-500/25 border-2 border-emerald-400"
+                        : "bg-slate-950 border border-slate-700 hover:border-slate-500"
+                }">${emoji}</button>`;
+            }).join("");
+        }
+
+        function pickEmoji(emoji) {
+            selectedEmoji = emoji;
+            renderEmojiPicker();
+        }
+
+        function escapeHtml(str) {
+            return String(str || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function renderIconMarkup(app) {
+            if (app.iconUrl && app.iconUrl.trim().startsWith("http")) {
+                return `<img src="${escapeHtml(app.iconUrl)}" alt="${escapeHtml(app.name)}" class="w-full h-full object-cover" onerror="this.outerHTML='<span>${escapeHtml(app.icon || "📱")}</span>'">`;
+            }
+            return `<span>${escapeHtml(app.icon || "📱")}</span>`;
+        }
+
+        function updateHeroStats() {
+            const totalAppsEl = document.getElementById("statTotalApps");
+            const totalDownloadsEl = document.getElementById("statTotalDownloads");
+            if (totalAppsEl) totalAppsEl.textContent = apps.length;
+            if (totalDownloadsEl) {
+                const sum = apps.reduce(function (acc, a) { return acc + (Number(a.downloads) || 0); }, 0);
+                totalDownloadsEl.textContent = sum.toLocaleString();
+            }
+        }
+
+        function renderApps() {
+            const grid = document.getElementById("appsGrid");
+            const emptyState = document.getElementById("emptyState");
+            const showingCount = document.getElementById("showingCount");
+            if (!grid) return;
+
+            const query = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
+            const sortBy = document.getElementById("sortSelect")?.value || "newest";
+
+            let filtered = apps.filter(function (app) {
+                const matchesCat = selectedCategory === "All" || app.category === selectedCategory;
+                const matchesSearch = !query ||
+                    (app.name || "").toLowerCase().includes(query) ||
+                    (app.category || "").toLowerCase().includes(query) ||
+                    (app.description || "").toLowerCase().includes(query);
+                return matchesCat && matchesSearch;
+            });
+
+            if (sortBy === "downloads") {
+                filtered.sort(function (a, b) { return (b.downloads || 0) - (a.downloads || 0); });
+            } else if (sortBy === "name") {
+                filtered.sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
+            } else {
+                filtered.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+            }
+
+            if (showingCount) {
+                showingCount.textContent = `Showing ${filtered.length} app${filtered.length === 1 ? "" : "s"}`;
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = "";
+                emptyState.classList.remove("hidden");
+                return;
+            }
+
+            emptyState.classList.add("hidden");
+            grid.innerHTML = filtered.map(function (app) {
+                return `
+                <div class="app-card rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-14 h-14 rounded-2xl bg-slate-800/90 border border-slate-700/80 flex items-center justify-center text-3xl shrink-0 overflow-hidden shadow-inner">
+                                ${renderIconMarkup(app)}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                                    ${escapeHtml(app.category || "App")}
+                                </span>
+                                <h4 class="text-base font-extrabold text-white truncate mt-1" title="${escapeHtml(app.name)}">${escapeHtml(app.name)}</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">v${escapeHtml(app.version || "1.0")} • ${escapeHtml(app.size || "APK")}</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300/90 mt-3.5 line-clamp-2 leading-relaxed">${escapeHtml(app.description || "Android APK application.")}</p>
+                    </div>
+
+                    <div class="mt-5 pt-3.5 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-semibold text-slate-400">⬇️ ${(Number(app.downloads) || 0).toLocaleString()}</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openAppDetails('${escapeHtml(app.id)}')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/70 transition">
+                                Details
+                            </button>
+                            <button onclick="downloadApp('${escapeHtml(app.id)}')" class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-400 hover:bg-emerald-300 text-slate-950 transition active:scale-95">
+                                Download
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join("");
+        }
+
+        function openAppDetails(targetId) {
+            const app = apps.find(function (a) { return a.id === targetId; });
+            if (!app) return;
+
+            document.getElementById("detailIcon").innerHTML = renderIconMarkup(app);
+            document.getElementById("detailCategory").textContent = app.category || "App";
+            document.getElementById("detailName").textContent = app.name;
+            document.getElementById("detailMeta").textContent = "Android APK • Verified by Ding Dong Apps";
+            document.getElementById("detailVersion").textContent = "v" + (app.version || "1.0");
+            document.getElementById("detailSize").textContent = app.size || "N/A";
+            document.getElementById("detailDownloads").textContent = (Number(app.downloads) || 0).toLocaleString();
+            document.getElementById("detailDescription").textContent = app.description || "";
+
+            const dlBtn = document.getElementById("detailDownloadBtn");
+            dlBtn.onclick = function () { downloadApp(app.id); };
+
+            openModal("detailsModal");
+        }
+
+        async function downloadApp(targetId) {
+            const app = apps.find(function (a) { return a.id === targetId; });
+            if (!app) return;
+
+            if (app.downloadUrl && app.downloadUrl.startsWith("http")) {
+                window.open(app.downloadUrl, "_blank", "noopener,noreferrer");
+                showToast("Starting download for " + app.name + "...", "success");
+            } else {
+                showToast("No valid download link set for this app.", "error");
+                return;
+            }
+
+            const newCount = (Number(app.downloads) || 0) + 1;
+
+            if (isCloudMode && currentUser && db && fsApi) {
+                try {
+                    const appDocRef = fsApi.doc(db, "artifacts", appId, "public", "data", "apps", targetId);
+                    await fsApi.updateDoc(appDocRef, { downloads: newCount });
+                } catch (err) {
+                    console.error("Failed to update download count:", err);
+                }
+            } else {
+                app.downloads = newCount;
+                renderApps();
+                updateHeroStats();
+            }
+        }
+
+        async function handlePublishApp(e) {
+            e.preventDefault();
+            const publishBtn = document.getElementById("publishBtn");
+            const newAppData = {
+                name: document.getElementById("appNameInput").value.trim(),
+                category: document.getElementById("appCategoryInput").value,
+                version: document.getElementById("appVersionInput").value.trim(),
+                size: document.getElementById("appSizeInput").value.trim(),
+                downloadUrl: document.getElementById("appDownloadUrlInput").value.trim(),
+                icon: selectedEmoji,
+                iconUrl: document.getElementById("appIconUrlInput").value.trim(),
+                description: document.getElementById("appDescInput").value.trim(),
+                downloads: 0,
+                createdAt: Date.now()
+            };
+
+            publishBtn.disabled = true;
+            publishBtn.textContent = "Publishing...";
+
+            try {
+                if (isCloudMode && currentUser && db && fsApi) {
+                    const appsColRef = fsApi.collection(db, "artifacts", appId, "public", "data", "apps");
+                    await fsApi.addDoc(appsColRef, newAppData);
+                    showToast("App published live to Cloud!", "success");
+                } else {
+                    apps.unshift({ id: "local-" + Date.now(), ...newAppData });
+                    renderApps();
+                    updateHeroStats();
+                    renderManageAppsList();
+                    showToast("App added locally (Offline Mode).", "info");
+                }
+
+                document.getElementById("publishTab").reset();
+                closeModal("adminModal");
+            } catch (err) {
+                console.error("Publish failed:", err);
+                showToast("Publish failed! Check Firebase Rules & Authorized Domains.", "error");
+            } finally {
+                publishBtn.disabled = false;
+                publishBtn.textContent = "🚀 Publish App Now";
+            }
+        }
+
+        function renderManageAppsList() {
+            const list = document.getElementById("manageAppsList");
+            if (!list) return;
+
+            if (apps.length === 0) {
+                list.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">No apps uploaded yet.</p>`;
+                return;
+            }
+
+            list.innerHTML = apps.map(function (app) {
+                return `
+                <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xl shrink-0 overflow-hidden">
+                            ${renderIconMarkup(app)}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-sm font-bold text-white truncate">${escapeHtml(app.name)}</div>
+                            <div class="text-[11px] text-slate-400">v${escapeHtml(app.version)} • ${escapeHtml(app.size)} • ⬇️ ${app.downloads || 0}</div>
+                        </div>
+                    </div>
+                    <button onclick="askDeleteApp('${escapeHtml(app.id)}')" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-400 hover:text-white text-xs font-bold border border-rose-500/30 transition shrink-0">
+                        Delete
+                    </button>
+                </div>`;
+            }).join("");
+        }
+
+        function askDeleteApp(id) {
+            const app = apps.find(function (a) { return a.id === id; });
+            if (!app) return;
+            pendingDeleteId = id;
+            document.getElementById("deleteAppNameText").textContent = `Are you sure you want to remove "${app.name}" from Ding Dong Apps?`;
+            openModal("deleteConfirmModal");
+        }
+
+        async function confirmDeleteApp() {
+            if (!pendingDeleteId) return;
+            const idToDelete = pendingDeleteId;
+            pendingDeleteId = null;
+            closeModal("deleteConfirmModal");
+
+            try {
+                if (isCloudMode && currentUser && db && fsApi) {
+                    const appDocRef = fsApi.doc(db, "artifacts", appId, "public", "data", "apps", idToDelete);
+                    await fsApi.deleteDoc(appDocRef);
+                    showToast("App deleted from Cloud.", "success");
+                } else {
+                    apps = apps.filter(function (a) { return a.id !== idToDelete; });
+                    renderApps();
+                    updateHeroStats();
+                    renderManageAppsList();
+                    showToast("App deleted locally.", "info");
+                }
+            } catch (err) {
+                console.error("Delete failed:", err);
+                showToast("Could not delete app.", "error");
+            }
+        }
+
+        // Dynamic Firebase Cloud Initialization
+        async function initCloudStorage() {
+            let firebaseConfig = EXTERNAL_FIREBASE_CONFIG;
+            if (typeof __firebase_config !== "undefined" && __firebase_config) {
+                try {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                } catch (e) {
+                    console.error("Invalid cloud config:", e);
+                }
+            }
+
+            if (!firebaseConfig) {
+                isCloudMode = false;
+                apps = STARTER_APPS.map(function (item, idx) { return { id: "local-" + (idx + 1), ...item }; });
+                setCloudStatus("Local Preview Mode", "bg-amber-400");
+                renderApps();
+                updateHeroStats();
+                return;
+            }
+
+            try {
+                const [appMod, authMod, fsMod] = await Promise.all([
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"),
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"),
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
+                ]);
+
+                fsApi = fsMod;
+                const firebaseApp = appMod.initializeApp(firebaseConfig);
+                auth = authMod.getAuth(firebaseApp);
+                db = fsMod.getFirestore(firebaseApp);
+
+                if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
+                    const cred = await authMod.signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = cred.user;
+                } else {
+                    const cred = await authMod.signInAnonymously(auth);
+                    currentUser = cred.user;
+                }
+
+                if (!currentUser) {
+                    throw new Error("Authentication failed");
+                }
+
+                isCloudMode = true;
+                setCloudStatus("Live Cloud Synced", "bg-emerald-400");
+
+                const appsColRef = fsApi.collection(db, "artifacts", appId, "public", "data", "apps");
+
+                fsApi.onSnapshot(
+                    appsColRef,
+                    async function (snapshot) {
+                        if (snapshot.empty && !initialSeedChecked) {
+                            initialSeedChecked = true;
+                            for (const starter of STARTER_APPS) {
+                                await fsApi.addDoc(appsColRef, {
+                                    ...starter,
+                                    createdAt: Date.now()
+                                });
+                            }
+                            return;
+                        }
+                        initialSeedChecked = true;
+                        apps = snapshot.docs.map(function (d) {
+                            return { id: d.id, ...d.data() };
+                        });
+                        renderApps();
+                        updateHeroStats();
+                        renderManageAppsList();
+                    },
+                    function (error) {
+                        console.error("Cloud sync error:", error);
+                        setCloudStatus("Sync Error (Check Rules)", "bg-rose-400");
+                        apps = STARTER_APPS.map(function (item, idx) { return { id: "local-" + (idx + 1), ...item }; });
+                        renderApps();
+                        updateHeroStats();
+                    }
+                );
+            } catch (err) {
+                console.error("Cloud initialization failed:", err);
+                isCloudMode = false;
+                apps = STARTER_APPS.map(function (item, idx) { return { id: "local-" + (idx + 1), ...item }; });
+                setCloudStatus("Offline Mode", "bg-amber-400");
+                renderApps();
+                updateHeroStats();
+            }
+        }
+
+        function initApp() {
+            const yearEl = document.getElementById("currentYear");
+            if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+            renderCategoryPills();
+            renderEmojiPicker();
+
+            ["detailsModal", "pinModal", "adminModal", "installGuideModal", "deleteConfirmModal"].forEach(function (id) {
+                const modal = document.getElementById(id);
+                if (modal) {
+                    modal.addEventListener("click", function (e) {
+                        if (e.target === this) closeModal(id);
+                    });
+                }
+            });
+
+            // Show starter apps right away while cloud connects
+            apps = STARTER_APPS.map(function (item, idx) { return { id: "local-" + (idx + 1), ...item }; });
+            renderApps();
+            updateHeroStats();
+
+            initCloudStorage();
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>
